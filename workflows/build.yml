@@ -1,0 +1,106 @@
+name: Build EXE
+
+on:
+  push:
+    branches: [ main, master ]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🔨 Generate icon (fallback if no icon provided)
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "assets/icon.ico")) {
+            New-Item -ItemType Directory -Force -Path assets | Out-Null
+            # Create a minimal valid ICO file (16x16 placeholder)
+            $icoBytes = [System.Convert]::FromBase64String(
+              "AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
+              "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
+              "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
+              "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
+              "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
+              "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
+              "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+            )
+            [System.IO.File]::WriteAllBytes("assets/icon.ico", $icoBytes)
+          }
+          if (-not (Test-Path "assets/icon.png")) {
+            Copy-Item "assets/icon.ico" "assets/icon.png" -ErrorAction SilentlyContinue
+          }
+
+      - name: 🏗️ Build Windows EXE (Installer + Portable)
+        run: npm run build:win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📤 Upload Installer EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: FMS-창고현황-Setup
+          path: dist/*Setup*.exe
+          if-no-files-found: warn
+
+      - name: 📤 Upload Portable EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: FMS-창고현황-Portable
+          path: dist/*portable*.exe
+          if-no-files-found: warn
+
+      - name: 📤 Upload all dist files
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-all
+          path: dist/
+          if-no-files-found: warn
+
+  # 태그 push 시 GitHub Release 자동 생성
+  release:
+    needs: build-windows
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: 📥 Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-all
+          path: dist/
+
+      - name: 🚀 Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.exe
+          name: FMS 창고 로케이션 현황 ${{ github.ref_name }}
+          body: |
+            ## FMS 창고 로케이션 현황 ${{ github.ref_name }}
+
+            ### 다운로드
+            - **Setup EXE** : 설치형 (권장)
+            - **Portable EXE** : 설치 없이 바로 실행
+
+            ### 주요 기능
+            - 파레트 렉 (ARM-RO2, ARM-RO3, ASM-G) 실시간 현황
+            - 소물 다이 (ASM-A~D) 현황
+            - TXT 발주 파일 자동 파싱
+            - 선입선출 시각화 (상단→하단)
+            - 안전/주의/위험 3단계 경과일 표시
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
