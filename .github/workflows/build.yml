@@ -23,21 +23,19 @@ jobs:
       - name: 📦 Install dependencies
         run: npm install
 
-      - name: 🔨 Generate icon (fallback if no icon provided)
+      - name: 🔨 Generate icon
         shell: pwsh
         run: |
-          if (-not (Test-Path "assets/icon.ico")) {
-            New-Item -ItemType Directory -Force -Path assets | Out-Null
-            $icoBytes = [System.Convert]::FromBase64String(
-              "AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-              "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-              "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-            )
-            [System.IO.File]::WriteAllBytes("assets/icon.ico", $icoBytes)
-          }
-          if (-not (Test-Path "assets/icon.png")) {
-            Copy-Item "assets/icon.ico" "assets/icon.png" -ErrorAction SilentlyContinue
-          }
+          New-Item -ItemType Directory -Force -Path assets | Out-Null
+          Add-Type -AssemblyName System.Drawing
+          $bmp = New-Object System.Drawing.Bitmap(256, 256)
+          $g = [System.Drawing.Graphics]::FromImage($bmp)
+          $g.Clear([System.Drawing.Color]::FromArgb(59, 130, 246))
+          $g.Dispose()
+          $bmp.Save("assets/icon.png", [System.Drawing.Imaging.ImageFormat]::Png)
+          $bmp.Save("assets/icon.ico", [System.Drawing.Imaging.ImageFormat]::Icon)
+          $bmp.Dispose()
+          Write-Host "Icon generated."
 
       - name: 🏗️ Build Windows EXE (Installer + Portable)
         run: npm run build:win
