@@ -23,21 +23,7 @@ jobs:
       - name: 📦 Install dependencies
         run: npm install
 
-      - name: 🔨 Generate icon
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path assets | Out-Null
-          Add-Type -AssemblyName System.Drawing
-          $bmp = New-Object System.Drawing.Bitmap(256, 256)
-          $g = [System.Drawing.Graphics]::FromImage($bmp)
-          $g.Clear([System.Drawing.Color]::FromArgb(59, 130, 246))
-          $g.Dispose()
-          $bmp.Save("assets/icon.png", [System.Drawing.Imaging.ImageFormat]::Png)
-          $bmp.Save("assets/icon.ico", [System.Drawing.Imaging.ImageFormat]::Icon)
-          $bmp.Dispose()
-          Write-Host "Icon generated."
-
-      - name: 🏗️ Build Windows EXE (Installer + Portable)
+      - name: 🏗️ Build Windows EXE
         run: npm run build:win
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -56,23 +42,22 @@ jobs:
           path: dist/*portable*.exe
           if-no-files-found: warn
 
-      - name: 📤 Upload all dist files
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-all
-          path: dist/
-          if-no-files-found: warn
-
   release:
     needs: build-windows
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
 
     steps:
-      - name: 📥 Download artifacts
+      - name: 📥 Download Installer
         uses: actions/download-artifact@v4
         with:
-          name: dist-all
+          name: FMS-창고현황-Setup
+          path: dist/
+
+      - name: 📥 Download Portable
+        uses: actions/download-artifact@v4
+        with:
+          name: FMS-창고현황-Portable
           path: dist/
 
       - name: 🚀 Create GitHub Release
@@ -82,7 +67,6 @@ jobs:
           name: FMS 창고 로케이션 현황 ${{ github.ref_name }}
           body: |
             ## FMS 창고 로케이션 현황 ${{ github.ref_name }}
-            ### 다운로드
             - **Setup EXE** : 설치형 (권장)
             - **Portable EXE** : 설치 없이 바로 실행
         env:
