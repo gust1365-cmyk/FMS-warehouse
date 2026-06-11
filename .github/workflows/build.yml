@@ -18,11 +18,10 @@ jobs:
       - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: '22'
 
       - name: 📦 Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: 🔨 Generate icon (fallback if no icon provided)
         shell: pwsh
@@ -85,16 +84,8 @@ jobs:
           name: FMS 창고 로케이션 현황 ${{ github.ref_name }}
           body: |
             ## FMS 창고 로케이션 현황 ${{ github.ref_name }}
-
             ### 다운로드
             - **Setup EXE** : 설치형 (권장)
             - **Portable EXE** : 설치 없이 바로 실행
-
-            ### 주요 기능
-            - 파레트 렉 (ARM-RO2, ARM-RO3, ASM-G) 실시간 현황
-            - 소물 다이 (ASM-A~D) 현황
-            - TXT 발주 파일 자동 파싱
-            - 선입선출 시각화 (상단→하단)
-            - 안전/주의/위험 3단계 경과일 표시
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
