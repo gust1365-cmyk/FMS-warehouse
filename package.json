@@ -5,12 +5,9 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build:win": "electron-builder --win --x64",
-    "build:mac": "electron-builder --mac",
-    "build:linux": "electron-builder --linux"
+    "build:win": "electron-builder --win --x64"
   },
-  "keywords": [],
-  "author": "IMS",
+  "author": "FMS",
   "license": "MIT",
   "devDependencies": {
     "electron": "^28.0.0",
@@ -24,21 +21,13 @@
     },
     "files": [
       "main.js",
-      "src/**/*",
-      "assets/**/*"
+      "src/**/*"
     ],
     "win": {
       "target": [
-        {
-          "target": "nsis",
-          "arch": ["x64"]
-        },
-        {
-          "target": "portable",
-          "arch": ["x64"]
-        }
-      ],
-      "icon": "assets/icon.ico"
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ]
     },
     "nsis": {
       "oneClick": false,
@@ -46,21 +35,10 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "FMS 창고 현황",
-      "installerIcon": "assets/icon.ico",
-      "uninstallerIcon": "assets/icon.ico",
-      "installerHeaderIcon": "assets/icon.ico",
       "language": "1042"
     },
     "portable": {
       "artifactName": "FMS-창고현황-portable.exe"
-    },
-    "mac": {
-      "target": "dmg",
-      "icon": "assets/icon.icns"
-    },
-    "linux": {
-      "target": "AppImage",
-      "icon": "assets/icon.png"
     }
   }
 }
